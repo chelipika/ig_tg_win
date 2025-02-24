@@ -16,7 +16,9 @@ import uuid
 from datetime import datetime
 from config import USERNAME, PASSWORD, CHANNEL_ID, CHANNEL_LINK, TOKEN
 bot = Bot(token=TOKEN)
+from concurrent.futures import ThreadPoolExecutor
 
+executor = ThreadPoolExecutor(max_workers=5)  # Adjust based on server capacity
 fact_list = [
     "🔥 Instagram boasts over 2 billion monthly active users.",
     "📸 High-quality visuals drive engagement.",
@@ -80,20 +82,6 @@ router = Router()
 INSTAGRAM_URL_REGEX = r"(https?:\/\/)?(www\.)?instagram\.com\/(reel|p)\/[\w-]+\/?"
 pending_requests = set()
 
-L = instaloader.Instaloader(
-            download_comments=False,
-            save_metadata=False,
-            download_video_thumbnails=False,
-            filename_pattern= "{shortcode}"  # updated pattern
-        )
-
-try:
-    L.login(USERNAME, PASSWORD)
-    print("Successfully logged in!")
-except Exception as e:
-    print(f"Login failed: {e}")
-    exit()
-
 async def extract_shortcode(url):
         """
         Extract shortcode from various Instagram URL formats
@@ -112,32 +100,32 @@ async def extract_shortcode(url):
         # If no match found, raise error
         raise ValueError("Could not extract shortcode from URL")
 
+def sync_download_single_post(url, id):
+    """Synchronously download an Instagram post."""
+    try:
+        # Create a new Instaloader instance for each download
+        L = instaloader.Instaloader(
+            download_comments=False,
+            save_metadata=False,
+            download_video_thumbnails=False,
+            filename_pattern="{shortcode}"
+        )
+        # Note: Not logging in here; assumes public posts
+        shortcode = re.search(r'/(?:p|reel)/([A-Za-z0-9_-]+)', url).group(1)
+        post = instaloader.Post.from_shortcode(L.context, shortcode)
+        download_dir = f"downloads{id}_{shortcode}_{uuid.uuid4()}"  # Unique directory
+        os.makedirs(download_dir, exist_ok=True)
+        L.download_post(post, target=download_dir)
+        return download_dir
+    except Exception as e:
+        print(f"Error downloading single post: {e}")
+        return None
+
 async def download_single_post(url, id):
-        """
-        Download a single post/reel using its URL
-        """
-        try:
-            # Extract shortcode from URL
-            shortcode = await extract_shortcode(url)
-
-            # Get post using shortcode
-            post = instaloader.Post.from_shortcode(L.context, shortcode)
-
-            # Create a temporary directory to store the downloaded file
-            download_dir = f"downloads{id}_{shortcode}"
-            os.makedirs(download_dir, exist_ok=True)  # Ensure directory exists
-
-            print(f"Downloading post/reel: {shortcode}")
-            
-            # Download the post to the specified directory
-            L.download_post(post, target=download_dir)
-            print("THIS IS POST: ")
-            print("Download completed!")
-            return download_dir
-
-        except Exception as e:
-            print(f"Error downloading single post: {e}")
-            return None
+    """Async wrapper to run synchronous download in a thread."""
+    loop = asyncio.get_running_loop()
+    download_dir = await loop.run_in_executor(executor, sync_download_single_post, url, id)
+    return download_dir
 async def is_subscribed(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
@@ -154,6 +142,34 @@ async def subscription_check(user, msg: Message) -> bool:
     else:
         await msg.answer(f"Subscribe first: {CHANNEL_LINK}", reply_markup=kb.subscribe_channel)
         return False
+
+async def process_download(message: Message, x: Message):
+    try:
+        download_dir = await download_single_post(message.text, message.from_user.id)
+        if download_dir is None:
+            await message.answer("Error occurred: Could not download the post.")
+            return
+
+        # Send downloaded files
+        for file in os.listdir(download_dir):
+            file_path = os.path.join(download_dir, file)
+            if file.endswith(".mp4"):
+                reel = FSInputFile(file_path, filename=file)
+                await message.answer_video(video=reel, caption="📥 Downloaded via @ReelyFastBot", reply_markup=kb.add_to_group)
+                os.remove(file_path)
+            elif file.endswith(".txt"):
+                os.remove(file_path)
+            elif file.endswith(".jpg"):
+                img = FSInputFile(file_path, filename=file)
+                await message.answer_photo(img, caption="📥 Downloaded via @ReelyFastBot")
+                os.remove(file_path)
+
+        # Clean up
+        await x.delete()
+        if os.path.isdir(download_dir):
+            shutil.rmtree(download_dir)
+    except Exception as e:
+        await message.answer(f"An error occurred: {e}")
 @router.chat_join_request()
 async def handle_join_request(update: ChatJoinRequest):
     pending_requests.add(update.from_user.id)
@@ -181,37 +197,9 @@ async def handle_instagram_reel(message: Message):
     if not await subscription_check(message.from_user.id, message):
         return
     x = await message.answer(f"✅ Instagram post detected! Did you know: {fact_list[randint(0, len(fact_list)-1)]}")
-    download_dir = await download_single_post(url=message.text, id=message.from_user.id)
-    if download_dir == None:
-        await message.answer('Error occured: Dir_name is None')
-        return
-
-    for file in os.listdir(download_dir):
-        if file.endswith(".mp4"):
-            reel_dir = f"{download_dir}\{file}"
-            reel = FSInputFile(reel_dir, filename=str(file))
-            await message.answer_video(video=reel, caption="📥 Downloaded via @ReelyFastBot", reply_markup=kb.add_to_group)
-            os.remove(reel_dir)
-        
-        if file.endswith(".txt"):
-            txt_dir = f"{download_dir}\{file}"
-            os.remove(txt_dir)
-        
-        if file.endswith(".jpg"):
-            upload_dir = f"{download_dir}\{file}"
-            img = FSInputFile(upload_dir, filename=str(file))
-            await message.answer_photo(img, caption="📥 Downloaded via @ReelyFastBot")
-            os.remove(upload_dir)
-
-    await x.delete()
-    if os.path.isdir(download_dir):
-        try:
-            shutil.rmtree(download_dir)  # This removes the directory and all its contents
-            await message.answer(f"Directory {download_dir} and all its contents have been removed.")
-        except Exception as e:
-            await message.answer(f"Error occurred while removing directory: {e}")
-    else:
-        await message.answer(f"{download_dir} is not a valid directory.")
+    # Start download as a background task
+    asyncio.create_task(process_download(message, x))
+    
 
 @router.message()
 async def catch_all(message: Message):
