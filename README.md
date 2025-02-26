@@ -26,6 +26,8 @@
 - 🎁 **Fun Facts**: Displays random Instagram facts during download
 - 👥 **Group Support**: Can be added to Telegram groups
 - 🪟 **Windows Optimized**: Specifically designed to run smoothly on Windows systems
+- ⚡ **Concurrent Downloads**: Uses ThreadPoolExecutor for efficient parallel processing
+- 🔄 **Asynchronous Architecture**: Non-blocking operation for better performance
 
 ## 🎮 Demo
 
@@ -42,8 +44,10 @@ Add [@ReelyFastBot](https://t.me/ReelyFastBot) on Telegram and start downloading
 - Windows 10/11
 - Python 3.8+
 - Telegram Bot Token (from [BotFather](https://t.me/BotFather))
-- Instagram credentials
-- Database setup (see configuration)
+- Required Python packages:
+  - aiogram
+  - instaloader
+  - asyncio
 
 ### Setup
 
@@ -55,58 +59,26 @@ Add [@ReelyFastBot](https://t.me/ReelyFastBot) on Telegram and start downloading
 
 2. Install dependencies:
    ```cmd
-   pip install -r requirements.txt
+   pip install aiogram instaloader
    ```
 
 3. Create a `config.py` file (see [Configuration](#configuration) section)
 
 4. Run the bot:
    ```cmd
-   python main.py
+   python bot.py
    ```
-
-### Windows Installation Shortcut
-
-You can also use the included batch file for quick setup:
-
-```cmd
-setup.bat
-```
 
 ## 📝 Configuration
 
-Create a `config.py` file in the project root with the following variables:
+Update a `config.py` file in the project root with the following variables:
 
 ```python
-# Instagram credentials
-USERNAME = "your_instagram_username"
-PASSWORD = "your_instagram_password"
-
 # Telegram settings
 TOKEN = "your_telegram_bot_token"
 CHANNEL_ID = "@your_channel_id"  # Channel users need to subscribe to
 CHANNEL_LINK = "https://t.me/your_channel"  # Public link to your channel
 ```
-
-## 🪟 Windows-Specific Features
-
-This version includes several optimizations for Windows systems:
-
-- **File Path Handling**: Uses Windows-compatible path separation
-- **System Tray Integration**: Run the bot in the background with system tray icon
-- **Automated Startup**: Option to run the bot at Windows startup
-- **Resource Management**: Optimized for Windows memory and CPU usage patterns
-- **Batch Scripts**: Includes `.bat` files for common operations:
-  - `setup.bat`: One-click installation and setup
-  - `run.bat`: Quick start the bot
-  - `update.bat`: Update the bot to the latest version
-
-### System Requirements
-
-- Windows 10 or 11 (64-bit recommended)
-- At least 4GB RAM
-- 100MB free disk space
-- Internet connection
 
 ## 📚 Project Structure
 
@@ -118,11 +90,7 @@ ig_tg_win/
 │   └── requests.py           # Database operations
 ├── reely/
 │   └── keyboards.py          # Telegram inline keyboards
-├── scripts/
-│   ├── setup.bat             # Windows setup script
-│   ├── run.bat               # Windows run script
-│   └── update.bat            # Windows update script
-└── requirements.txt          # Python dependencies
+└── README.md                 # This documentation
 ```
 
 ## 🚀 Usage
@@ -134,13 +102,11 @@ Once the bot is running, users can:
 3. Send any Instagram post/reel URL
 4. Receive the downloaded content directly in the chat
 
-### Windows System Tray
+### Advanced Features
 
-Right-click the system tray icon to access these options:
-- **Open Dashboard**: Opens the bot control panel
-- **Pause/Resume**: Temporarily stop or restart the bot
-- **Check for Updates**: Manually check for updates
-- **Exit**: Completely shut down the bot
+- **Concurrent Processing**: The bot can handle multiple requests simultaneously
+- **Automatic Cleanup**: Downloaded files are removed after sending
+- **Admin Broadcasting**: Use `/narrator` command to send messages to all users
 
 ## 🙌 Contributing
 
@@ -161,7 +127,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [aiogram](https://github.com/aiogram/aiogram) - Telegram Bot framework
 - [instaloader](https://github.com/instaloader/instaloader) - Instagram scraping library
 - [Telegram Bot API](https://core.telegram.org/bots/api)
-- [PyInstaller](https://www.pyinstaller.org/) - Used for creating Windows executables
+- [asyncio](https://docs.python.org/3/library/asyncio.html) - Python's asynchronous I/O framework
 
 ---
 
