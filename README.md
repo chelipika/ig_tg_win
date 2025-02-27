@@ -13,7 +13,7 @@
 > 🔗 Looking for the Linux version? Check out [ig_tg_d](https://github.com/chelipika/ig_tg_d)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/chelipika/ig_tg_win/main/assets/demo.gif" alt="Demo GIF" width="600">
+  <img src="https://raw.githubusercontent.com/chelipika/ig_tg_win/main/assets/demo.gif" alt="Demo GIF" width="100">
 </p>
 
 ## ✨ Features
@@ -33,9 +33,7 @@
 
 Add [@ReelyFastBot](https://t.me/ReelyFastBot) on Telegram and start downloading your favorite Instagram content instantly!
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/chelipika/ig_tg_win/main/assets/usage-example.png" alt="Usage Example" width="300">
-</p>
+<a href="https://github.com/chelipika/ig_tg_win/blob/main/demo.md">Demo img and gif</a>
 
 ## 🔧 Installation
 
