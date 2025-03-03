@@ -140,7 +140,7 @@ async def subscription_check(user, msg: Message) -> bool:
     elif user in pending_requests:
         return True
     else:
-        await msg.answer(f"Subscribe first: {CHANNEL_LINK}", reply_markup=kb.subscribe_channel)
+        await msg.answer(f"Send request first, Киньте запрос на подписку: {CHANNEL_LINK}", reply_markup=kb.subscribe_channel)
         return False
 
 async def process_download(message: Message, x: Message):
