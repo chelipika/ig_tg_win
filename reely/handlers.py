@@ -94,7 +94,7 @@ class GroupMsg(StatesGroup):
     inline_link_name = State()
     inline_link_link = State()
 
-    
+
 INSTAGRAM_URL_REGEX = r"(https?:\/\/)?(www\.)?instagram\.com\/(reel|p)\/[\w-]+\/?"
 pending_requests = set()
 
@@ -236,11 +236,15 @@ async def handle_instagram_reel(message: Message):
 @router.message(Command("send_to_all_users"))
 async def start_send_to_all(message: Message, state: FSMContext):
     await state.set_state(AdvMsg.img)
-    await message.answer("send your img🖼️")
+    await message.answer("send your img🖼️\nIf no image then type none")
 
 
 @router.message(AdvMsg.img)
 async def ads_img(message: Message, state: FSMContext):
+    if message.text:
+        if message.text == "none":
+            await state.set_state(GroupMsg.txt)
+            await message.answer("send your text🗄️")
     photo_data = { "photo": message.photo }  # Ensure it's in dictionary format
     await state.update_data(img=message.photo[-1].file_id)
     await state.set_state(AdvMsg.txt)
@@ -250,46 +254,56 @@ async def ads_img(message: Message, state: FSMContext):
 async def ads_txt(message: Message, state: FSMContext):
     await state.update_data(txt=message.text)
     await state.set_state(AdvMsg.inline_link_name)
-    await message.answer("send your inline_link name📛")
+    await message.answer("send your inline_link name📛\n if no type none")
 
 @router.message(AdvMsg.inline_link_name)
 async def ads_lk_name(message: Message, state: FSMContext):
     await state.update_data(inline_link_name=message.text)
     await state.set_state(AdvMsg.inline_link_link)
-    await message.answer("send your inline_link LINK🔗")
+    await message.answer("send your inline_link LINK🔗\n if no type none")
 
 @router.message(AdvMsg.inline_link_link)
 async def ads_final(message: Message, state: FSMContext):
-    await state.update_data(inline_link_link=message.text)
-    data = await state.get_data()
-    new_inline_kb = kb.create_markap_kb(name=data['inline_link_name'], url=data['inline_link_link'])
-    if new_inline_kb == None:
-        for user in await rq.get_all_user_ids():
-            if data['img']:
-                await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'])
-            elif data['audio']:
-                await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"])
+    try:
+        await state.update_data(inline_link_link=message.text)
+        data = await state.get_data()
+        new_inline_kb = kb.create_markap_kb(name=data['inline_link_name'], url=data['inline_link_link'])
+        if new_inline_kb == None:
+            for user in await rq.get_all_user_ids():
+                if data['img']:
+                    await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'])
+                elif data['audio']:
+                    await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"])
+                else:
+                    await bot.send_message(chat_id=user, text=data['txt'])
 
-    else:
-        for user in await rq.get_all_user_ids():
-            if data['img']:
-                await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'], reply_markup=new_inline_kb)
-            elif data['audio']:
-                await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"], reply_markup=new_inline_kb)
+        else:
+            for user in await rq.get_all_user_ids():
+                if data['img']:
+                    await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'], reply_markup=new_inline_kb)
+                elif data['audio']:
+                    await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"], reply_markup=new_inline_kb)
+                else:
+                    await bot.send_message(chat_id=user, text=data['txt'])
 
-
-    await state.clear()
+        await state.clear()
+    except Exception as e:
+        await message.answer(f"Got unexpected error, report to admin or just wait till update, the error:\n {e}")
 
 
 
 @router.message(Command("send_to_all_groups"))
 async def start_send_to_all_GroupMsg(message: Message, state: FSMContext):
     await state.set_state(GroupMsg.img)
-    await message.answer("send your img🖼️")
+    await message.answer("send your img🖼️\nIf no image then type none")
 
 
 @router.message(GroupMsg.img)
 async def ads_img_GroupMsg(message: Message, state: FSMContext):
+    if message.text:
+        if message.text == "none":
+            await state.set_state(GroupMsg.txt)
+            await message.answer("send your text🗄️")
     photo_data = { "photo": message.photo }  # Ensure it's in dictionary format
     await state.update_data(img=message.photo[-1].file_id)
     await state.set_state(GroupMsg.txt)
@@ -299,35 +313,39 @@ async def ads_img_GroupMsg(message: Message, state: FSMContext):
 async def ads_txtGroupMsg(message: Message, state: FSMContext):
     await state.update_data(txt=message.text)
     await state.set_state(GroupMsg.inline_link_name)
-    await message.answer("send your inline_link name📛")
+    await message.answer("send your inline_link name📛\n if no type none")
 
 @router.message(GroupMsg.inline_link_name)
 async def ads_lk_nameGroupMsg(message: Message, state: FSMContext):
     await state.update_data(inline_link_name=message.text)
     await state.set_state(GroupMsg.inline_link_link)
-    await message.answer("send your inline_link LINK🔗")
+    await message.answer("send your inline_link LINK🔗\n if no type none")
 
 @router.message(GroupMsg.inline_link_link)
 async def ads_finalGroupMsg(message: Message, state: FSMContext):
-    await state.update_data(inline_link_link=message.text)
-    data = await state.get_data()
-    new_inline_kb = kb.create_markap_kb(name=data['inline_link_name'], url=data['inline_link_link'])
-    if new_inline_kb == None:
-        for user in await rq.get_all_groups_ids():
-            if data['img']:
-                await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'])
-            elif data['audio']:
-                await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"])
+    try:
+        await state.update_data(inline_link_link=message.text)
+        data = await state.get_data()
+        new_inline_kb = kb.create_markap_kb(name=data['inline_link_name'], url=data['inline_link_link'])
+        if new_inline_kb == None:
+            for user in await rq.get_all_groups_ids():
+                if data['img']:
+                    await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'])
+                elif data['audio']:
+                    await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"])
 
-    else:
-        for user in await rq.get_all_groups_ids():
-            if data['img']:
-                await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'], reply_markup=new_inline_kb)
-            elif data['audio']:
-                await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"], reply_markup=new_inline_kb)
+        else:
+            for user in await rq.get_all_groups_ids():
+                if data['img']:
+                    await bot.send_photo(chat_id=user, photo=data['img'],caption=data['txt'], reply_markup=new_inline_kb)
+                elif data['audio']:
+                    await bot.send_voice(chat_id=user, voice=data['audio'], caption=data["txt"], reply_markup=new_inline_kb)
+                else:
+                    await bot.send_message(chat_id=user, text=data['txt'])
 
-
-    await state.clear()
+        await state.clear()
+    except Exception as e:
+        await message.answer(f"Got unexpected error, report to admin or just wait till update, the error:\n {e}")
 
 @router.message()
 async def catch_all(message: Message):
